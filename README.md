@@ -23,8 +23,8 @@ Um jogo de plataforma 2D feito com **Pygame Zero**, com inimigos e uma bandeira 
 
 ## 🎵 Recursos de áudio
 
-- Música de fundo que pode ser **ligada ou desligada** durante o jogo ou no menu.
-- Efeitos sonoros:
+- Música pode ser **ligada ou desligada** no menu.
+  - **música de fundo**  
   - **pulo** da personagem
   - **morte** ao encostar em inimigos
 
@@ -45,7 +45,7 @@ Um jogo de plataforma 2D feito com **Pygame Zero**, com inimigos e uma bandeira 
 - **Animações** dos personagem:
   - Player:
      - Andar para esquerda/direita
-     - Pular
+     - Pular para esquerda/direita
      - Idle
   - Inimigos:
      - Andar para esquerda/direita
