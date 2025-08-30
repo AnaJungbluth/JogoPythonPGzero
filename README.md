@@ -49,4 +49,3 @@ Um jogo de plataforma 2D feito com **Pygame Zero**, com inimigos e uma bandeira 
      - Idle
   - Inimigos:
      - Andar para esquerda/direita
-- **Hitboxes ajustadas** para colisão precisa com inimigos.
