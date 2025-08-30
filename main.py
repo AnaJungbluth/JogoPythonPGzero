@@ -103,7 +103,6 @@ class Player:
         if music_on and finished == False:
             sounds.death.play()
             finished = True
-        
         game_state = "game_over"
 
     def update_animation(self):
@@ -208,7 +207,7 @@ class Enemy:
         self.right_limit = map_width - self.actor.width
         self.direction = "right" if self.vx > 0 else "left"
 
-        # colider
+        # collider
         if enemy_type == "bee":
             self.width = 64  
             self.height = 60 
@@ -249,7 +248,6 @@ class Enemy:
 
 num_bees = 5   
 num_rats = 3   
-
 bees = []
 rats = []
 
