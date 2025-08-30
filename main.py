@@ -13,6 +13,7 @@ level = 1
 num_enemies = 2
 music_on = True
 music.play("background")
+finished = False
 
 # --- TILES ---
 tile_images = {
@@ -40,6 +41,10 @@ for row_index, row in enumerate(map):
             rect = Rect(col_index*TILE_SIZE, row_index*TILE_SIZE, TILE_SIZE, TILE_SIZE)
             platforms.append(rect)
 
+# deslocamento para melhorar o collider do player
+offset_x = 25 
+offset_y = 20
+
 # --- PLAYER ---
 class Player:
     def __init__(self, actor, x, y):
@@ -49,7 +54,12 @@ class Player:
         self.vx = 0
         self.vy = 0
         self.on_ground = False
-        self.direction = "right"  
+        self.direction = "right" 
+
+        # collider
+        self.width = 75  
+        self.height = 95 
+        self.rect = Rect(self.actor.x + offset_x, self.actor.y - offset_y, self.width, self.height) 
 
         # animações  
         self.walk_right = ["character_pink_walk_a_right", "character_pink_walk_b_right"]
@@ -84,13 +94,16 @@ class Player:
                 sounds.sfx_jump.play()
     
     def victory(self):
-        global game_state
+        global game_state, finished
         game_state = "victory"
+        finished = True
 
     def death(self):
-        global game_state, music_on
-        if music_on:
+        global game_state, music_on, finished
+        if music_on and finished == False:
             sounds.death.play()
+            finished = True
+        
         game_state = "game_over"
 
     def update_animation(self):
@@ -121,7 +134,10 @@ class Player:
             self.actor.image = self.idle_images[int(self.frame)]
 
     def update(self, platforms):
+        global offset_x, offset_y
         self.actor.x += self.vx
+        self.rect.topleft = (self.actor.x + offset_x, self.actor.y - offset_y)
+
         for plat in platforms:
             if self.actor.colliderect(plat):
                 if self.vx > 0:
@@ -153,7 +169,7 @@ class Player:
 
         self.update_animation()
 
-player = Player(Actor("character_pink_idle"), 70, 0)
+player = Player(Actor("character_pink_idle"), 70, 100)
 
 # --- CAMERA ---
 camera_x = 0
@@ -174,11 +190,14 @@ flag_frames = ["flag_green_a", "flag_green_b"]
 flag_index = 0
 flag_timer = 0
 
+offset_y_rat = 15
+
 # --- INIMIGO ---
 class Enemy:
-    def __init__(self, actor, walk_right_images, walk_left_images, y, speed):
+    def __init__(self, actor, enemy_type, walk_right_images, walk_left_images, y, speed):
         import random
         self.actor = actor
+        self.enemy_type = enemy_type
         self.walk_right_images = walk_right_images
         self.walk_left_images = walk_left_images
         self.actor.y = y
@@ -189,12 +208,25 @@ class Enemy:
         self.right_limit = map_width - self.actor.width
         self.direction = "right" if self.vx > 0 else "left"
 
+        # colider
+        if enemy_type == "bee":
+            self.width = 64  
+            self.height = 60 
+        elif enemy_type == "rat":
+            self.width = 60  
+            self.height = 50 
+        self.rect = Rect(self.actor.x, self.actor.y + offset_y_rat, self.width, self.height)
+
         # animações
         self.frame = 0
-        self.animation_speed = 0.15
+        self.animation_speed = 0.10
 
     def update(self):
         self.actor.x += self.vx
+        if self.enemy_type == "rat":
+            self.rect.topleft = (self.actor.x, self.actor.y + offset_y_rat)
+        elif self.enemy_type == "bee":
+            self.rect.topleft = (self.actor.x, self.actor.y)
 
         # Checa limites do mapa
         if self.actor.left <= self.left_limit:
@@ -225,6 +257,7 @@ for _ in range(num_bees):
     bees.append(
         Enemy(
             Actor("bee_a_right"), 
+            enemy_type="bee",
             walk_right_images=["bee_a_right", "bee_b_right"],
             walk_left_images=["bee_a_left", "bee_b_left"],
             y=210, 
@@ -236,33 +269,13 @@ for _ in range(num_rats):
     rats.append(
         Enemy(
             Actor("mouse_walk_a_right"), 
+            enemy_type="rat",
             walk_right_images=["mouse_walk_a_right", "mouse_walk_b_right"],
             walk_left_images=["mouse_walk_a_left", "mouse_walk_b_left"],
             y=335, 
             speed=1.5
         )
     )
-
-def check_collision():
-    player_hitbox = Rect(
-        player.actor.left,     
-        player.actor.top,      
-        player.actor.width,    
-        player.actor.height    
-    )
-
-    for rat in rats:
-        rat_hitbox = Rect(rat.actor.left, rat.actor.top, rat.actor.width, rat.actor.height)
-        if player_hitbox.colliderect(rat_hitbox):
-            player.death()
-    
-    for bee in bees:
-        bee_hitbox = Rect(bee.actor.left, bee.actor.top, bee.actor.width, bee.actor.height)
-        if player_hitbox.colliderect(bee_hitbox):
-            player.death()
-
-    if player_hitbox.colliderect(rat_hitbox) or player_hitbox.colliderect(bee_hitbox):
-        player.death()
 
 class Button:
     def __init__(self, text, x, y, width, height, action, color = (205, 133, 63)):
@@ -301,7 +314,7 @@ def exit_game():
     quit()
 
 def restart_game():
-    global game_state, player, bee, rat
+    global game_state, player, bee, rat, finished
 
     player.actor.x = 70
     player.actor.y = 0
@@ -321,6 +334,7 @@ def restart_game():
         rat.direction = "right" if rat.vx > 0 else "left"
 
     game_state = "playing"
+    finished = False
     if music_on:
         music.play("background")
 
@@ -337,17 +351,18 @@ game_over_buttons = [
 ]
 
 def update():
-    global flag_index, flag_timer
+    global flag_index, flag_timer, finished
 
-    if keyboard.left:
-        player.move_left()
-    elif keyboard.right:
-        player.move_right()
-    else:
-        player.stop()
+    if finished == False:
+        if keyboard.left:
+            player.move_left()
+        elif keyboard.right:
+            player.move_right()
+        else:
+            player.stop()
 
-    if keyboard.space:
-        player.jump()
+        if keyboard.space:
+            player.jump()
 
     flag_timer += 1
     if flag_timer % 10 == 0:  
@@ -357,15 +372,17 @@ def update():
     if player.actor.colliderect(flag):  
         player.victory()
     
-    check_collision()
-
     player.update(platforms)
     update_camera(player)
     
     for bee in bees:
         bee.update()
+        if player.rect.colliderect(bee.rect):
+            player.death()
     for rat in rats:
         rat.update()
+        if player.rect.colliderect(rat.rect):
+            player.death()
 
 def draw():
     screen.clear()
